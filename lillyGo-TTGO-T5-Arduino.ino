@@ -24,7 +24,6 @@ void loop()
 {
     testButtons();
     testVersion();
-    delay(100);
 }
 /**
  * @brief Checks button and write on serial when pressed
