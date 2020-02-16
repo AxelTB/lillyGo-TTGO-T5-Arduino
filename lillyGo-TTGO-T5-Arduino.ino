@@ -1,50 +1,53 @@
+//e-ink---------------------------------------------------------------
 #include "GxEPD.h"
-
 // select the display class to use, only one
-#include <GxGDEP015OC1/GxGDEP015OC1.h>    // 1.54" b/w
-//#include GxEPD_BitmapExamples
-
+#include <GxGDEP015OC1/GxGDEP015OC1.h> // 1.54" b/w
 // FreeFonts from Adafruit_GFX
 #include <Fonts/FreeMonoBold9pt7b.h>
 #include <Fonts/FreeMonoBold12pt7b.h>
-#include <Fonts/FreeMonoBold18pt7b.h>
 #include <Fonts/FreeMonoBold24pt7b.h>
 #include <Fonts/FreeSansBoldOblique9pt7b.h>
-
-
 #include <GxIO/GxIO_SPI/GxIO_SPI.h>
 #include <GxIO/GxIO.h>
 
+GxIO_Class io(SPI, /*CS=5*/ SS, /*DC=*/17, /*RST=*/16);
+GxEPD_Class display(io, /*RST=*/16, /*BUSY=*/4);
 
+#define UPDATE_SCREEN_EVERY_S 5
+
+//Button configuration------------------------------------------------
 #define BUTTON_1 38
 #define BUTTON_2 37
 #define BUTTON_3 39
 #define BUTTON_NUM 3
+const int buttons[] = {BUTTON_1, BUTTON_2, BUTTON_3};
 
+//Version check parameters--------------------------------------------
 #define READ_ANALOG_EVERY_MS 100
-
-const int buttons[]={BUTTON_1,BUTTON_2,BUTTON_3};
-
-
-GxIO_Class io(SPI, /*CS=5*/ SS, /*DC=*/ 17, /*RST=*/ 16); // arbitrary selection of 17, 16
-GxEPD_Class display(io, /*RST=*/ 16, /*BUSY=*/ 4); // arbitrary selection of (16), 4
 
 void setup()
 {
-    //Serial usb
-    Serial.begin(115200);
-    Serial.println("Hello world!");
-    //Button
-    //Activate pullup for buttons
-    for(int i=0; i<BUTTON_NUM; i++){
-        pinMode(buttons[i], INPUT_PULLUP);
-    }
-    //Display
-    display.init(115200); // enable diagnostic output on Serial
-
+  //Serial---------------------
+  Serial.begin(115200);
+  Serial.println("Hello world!");
+  //Button---------------------
+  //Activate pullup for buttons
+  for (int i = 0; i < BUTTON_NUM; i++)
+  {
+    pinMode(buttons[i], INPUT_PULLUP);
+  }
+  //Display--------------------
+  display.init(); // enable diagnostic output on Serial
+  display.setRotation(3);
+}
+void loop()
+{
+  testButtons();
+  testVersion();
+  displayTest();
 }
 
-void showFont(const char name[], const GFXfont* f)
+void showFont(const char name[], const GFXfont *f)
 {
   display.fillScreen(GxEPD_WHITE);
   display.setTextColor(GxEPD_BLACK);
@@ -62,32 +65,37 @@ void showFont(const char name[], const GFXfont* f)
   display.println("`abcdefghijklmno");
   display.println("pqrstuvwxyz{|}~ ");
   display.update();
-  delay(5000);
 }
 
+/**
+ * @brief Show text on screem
+ * 
+ */
 void displayTest()
 {
-    showFont("FreeMonoBold9pt7b", &FreeMonoBold9pt7b);
-  //showFont("FreeMonoBold12pt7b", &FreeMonoBold12pt7b);
-}
-
-void loop()
-{
-    testButtons();
-    testVersion();
-    displayTest();
+  static uint32_t lastUpdate = millis();
+  if (millis() - lastUpdate > ((uint32_t)UPDATE_SCREEN_EVERY_S * 1000))
+  {
+    //showFont("FreeMonoBold9pt7b", &FreeMonoBold9pt7b);
+    showFont("FreeMonoBold12pt7b", &FreeMonoBold12pt7b);
+    //showFont("FreeMonoBold24pt7b", &FreeMonoBold24pt7b);
+    lastUpdate=millis();
+  }
 }
 /**
  * @brief Checks button and write on serial when pressed
  * 
  */
-void testButtons(){
-    for (int i=0; i<BUTTON_NUM; i++){
-        if(digitalRead(buttons[i])== LOW){
-            Serial.print("Pressed button ");
-            Serial.println(i+1);
-        }
+void testButtons()
+{
+  for (int i = 0; i < BUTTON_NUM; i++)
+  {
+    if (digitalRead(buttons[i]) == LOW)
+    {
+      Serial.print("Pressed button ");
+      Serial.println(i + 1);
     }
+  }
 }
 
 /**
@@ -98,12 +106,13 @@ void testButtons(){
  */
 void testVersion()
 {
-    static uint32_t lastRead=millis();
-    if(millis()-lastRead > READ_ANALOG_EVERY_MS){
+  static uint32_t lastRead = millis();
+  if (millis() - lastRead > READ_ANALOG_EVERY_MS)
+  {
     Serial.print(analogRead(25));
     Serial.print(", ");
     Serial.print(analogRead(33));
     Serial.println();
-    lastRead=millis();
-    }
+    lastRead = millis();
+  }
 }
